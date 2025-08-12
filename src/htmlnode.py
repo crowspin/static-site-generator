@@ -6,7 +6,7 @@ class HTMLNode:
         self.props = props
 
     def to_html(self):
-        raise NotImplementedError()
+        raise NotImplementedError("to_html is not implemented in HTMLNode")
     
     def props_to_html(self):
         output = ""
