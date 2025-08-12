@@ -8,7 +8,7 @@ def main():
 def text_node_to_html_node(text_node):
     match (text_node.text_type):
         case TextType.PLAIN_TEXT:
-            return LeafNode(value=text_node.text)
+            return LeafNode(None, text_node.text)
         case TextType.BOLD_TEXT:
             return LeafNode("b", text_node.text)
         case TextType.ITALIC_TEXT:
