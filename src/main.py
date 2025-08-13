@@ -62,8 +62,47 @@ def extract_markdown_images(text):
     return findall(r"\!\[(.*?)\]\(([\w:\/.]+)\)", text)
 
 def extract_markdown_links(text):
-    return findall(r"\s+\[(.*?)\]\((*+?)\)", text)
-    #return findall(r"\s+\[(.*?)\]\(([\w:\/.]+)\)", text)
-    # looks for a whitespace character ahead of link format to elimitate matches with images; could be breaking but not sure. Off the top'a me head ts.
+    return findall(r"(?<!!)\[(.*?)\]\((.+?)\)", text)
+    #Decided that matching any number of whitespace ahead of the match was probably unwise; decided to use negative look-behind instead
+
+def split_nodes_link_or_image(use_case, old_nodes):
+    if use_case is TextType.LINK:
+        extract_func = extract_markdown_links
+        splitter = ""
+    elif use_case is TextType.IMAGE:
+        extract_func = extract_markdown_images
+        splitter = "!"
+    else: 
+        raise TypeError("Use case must be LINK or IMAGE")
+    
+    new_nodes = []
+    for node in old_nodes:
+        if node.text_type != TextType.PLAIN_TEXT:
+            new_nodes.append(node)
+            continue
+
+        matches = extract_func(node.text)
+        if not matches:
+            new_nodes.append(node)
+            continue
+
+        op_text = node.text
+        for match in matches:
+            spl = op_text.split(splitter + f"[{match[0]}]({match[1]})", 1)
+            if spl[0]:
+                new_nodes.append(TextNode(spl[0], TextType.PLAIN_TEXT))
+            new_nodes.append(TextNode(match[0], use_case, match[1]))
+            op_text = spl[1]
+        if op_text:
+            new_nodes.append(TextNode(op_text, TextType.PLAIN_TEXT))
+
+    return new_nodes
+
+
+def split_nodes_image(old_nodes):
+    return split_nodes_link_or_image(TextType.IMAGE, old_nodes)
+
+def split_nodes_link(old_nodes):
+    return split_nodes_link_or_image(TextType.LINK, old_nodes)
 
 main()
