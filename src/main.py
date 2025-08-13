@@ -1,5 +1,6 @@
 from textnode import *
 from leafnode import LeafNode
+from re import findall
 
 def main():
     #tn = TextNode("This is some anchor text", TextType.LINK)
@@ -56,5 +57,13 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type, do_what_the_course_sa
         else:
             new_nodes.append(node)
     return new_nodes
+
+def extract_markdown_images(text):
+    return findall(r"\!\[(.*?)\]\(([\w:\/.]+)\)", text)
+
+def extract_markdown_links(text):
+    return findall(r"\s+\[(.*?)\]\((*+?)\)", text)
+    #return findall(r"\s+\[(.*?)\]\(([\w:\/.]+)\)", text)
+    # looks for a whitespace character ahead of link format to elimitate matches with images; could be breaking but not sure. Off the top'a me head ts.
 
 main()
