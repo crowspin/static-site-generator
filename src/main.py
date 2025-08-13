@@ -98,11 +98,27 @@ def split_nodes_link_or_image(use_case, old_nodes):
 
     return new_nodes
 
-
 def split_nodes_image(old_nodes):
     return split_nodes_link_or_image(TextType.IMAGE, old_nodes)
 
 def split_nodes_link(old_nodes):
     return split_nodes_link_or_image(TextType.LINK, old_nodes)
+
+'''
+    Oh, cool cool cool. We actually are doing this after all.
+    Looking at the split_nodes_delimiter function, I can see clearly that that's not going to support nesting at all.
+    Not sure how I managed to think that, it's not injecting HTML tags, we aren't recursing over text, we're breaking things out. I could _try_ and 
+    scan ahead in the old_nodes list searching for nodes of plain text that hold a close character, then split on each of those characters and
+    convert all the plain text nodes in between to the modified type, but given this format I think I'd need to make combination types, and that'd
+    just be too much of a headache. I like the injection method better. I'm not gonna use do_what_the_course_says=False. :,(
+'''
+def text_to_textnodes(text):
+    nodes = [TextNode(text, TextType.PLAIN_TEXT)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD_TEXT)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC_TEXT)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_link(nodes)
+    nodes = split_nodes_image(nodes)
+    return nodes
 
 main()
