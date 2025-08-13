@@ -1,7 +1,7 @@
 import unittest
 
 from textnode import TextNode, TextType
-from main import text_node_to_html_node
+from main import text_node_to_html_node, split_nodes_delimiter
 
 
 class TestTextNode(unittest.TestCase):
@@ -30,6 +30,22 @@ class TestTextNode(unittest.TestCase):
         html_node = text_node_to_html_node(node)
         self.assertEqual(html_node.tag, None)
         self.assertEqual(html_node.value, "This is a text node")
+
+    def test_split_text(self):
+        node = TextNode("This is a text node", TextType.PLAIN_TEXT)
+        expected_result = [
+            TextNode("This is a text node", TextType.PLAIN_TEXT),
+        ]
+        self.assertEqual(split_nodes_delimiter([node], "*", TextType.BOLD_TEXT), expected_result)
+
+    def test_split_text_2(self):
+        node = TextNode("This is a **text** node", TextType.PLAIN_TEXT)
+        expected_result = [
+            TextNode("This is a ", TextType.PLAIN_TEXT),
+            TextNode("text", TextType.BOLD_TEXT),
+            TextNode(" node", TextType.PLAIN_TEXT),
+        ]
+        self.assertEqual(split_nodes_delimiter([node], "**", TextType.BOLD_TEXT), expected_result)
 
 if __name__ == "__main__":
     unittest.main()
