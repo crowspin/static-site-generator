@@ -1,6 +1,7 @@
 from textnode import *
 from leafnode import LeafNode
 from re import findall
+from enum import Enum
 
 def main():
     #tn = TextNode("This is some anchor text", TextType.LINK)
@@ -128,5 +129,41 @@ def markdown_to_blocks(markdown):
             del spl[i]
         spl[i] = spl[i].strip()
     return spl
+
+class BlockType(Enum):
+    paragraph = 0
+    heading = 1
+    code = 2
+    quote = 3
+    unordered_list = 4
+    ordered_list = 5
+
+def block_to_block_type(block):
+    header_match = findall(r"^#{1,6} \w*", block)
+    if header_match:
+        return BlockType.heading
+
+    if block[:3] == "```" and block[-3:] == "```":
+        return BlockType.code
+    
+    split = block.split("\n")
+    quote_test = True
+    ul_test = True
+    ol_test = True
+    for i in range(len(split)):
+        if split[i][0] != '>':
+            quote_test = False
+        if split[i][0:2] != "- ":
+            ul_test = False
+        ol_match = findall(fr"^{i+1}. ", split[i])
+        if not ol_match:
+            ol_test = False
+    if quote_test:
+        return BlockType.quote
+    if ul_test:
+        return BlockType.unordered_list
+    if ol_test:
+        return BlockType.ordered_list
+    return BlockType.paragraph
 
 main()

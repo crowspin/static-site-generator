@@ -109,8 +109,8 @@ class TestMainFunctions(unittest.TestCase):
             ], nodes
         )
 
-        def test_markdown_to_blocks(self):
-            md = """
+    def test_markdown_to_blocks(self):
+        md = """
 This is **bolded** paragraph
 
 This is another paragraph with _italic_ text and `code` here
@@ -119,15 +119,56 @@ This is the same paragraph on a new line
 - This is a list
 - with items
 """
-            blocks = markdown_to_blocks(md)
-            self.assertEqual(
-                blocks,
-                [
-                    "This is **bolded** paragraph",
-                    "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
-                    "- This is a list\n- with items",
-                ],
-            )   
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )   
+
+    def test_block_to_blocktype(self):
+        tests = [
+            "This is not a header",
+            "# This is a header",
+            "### This is also a header",
+            "###### And this one too",
+            "####### But not this",
+            "######Or this",
+            "```\nthis is a code block\n```",
+            "```but not this\n``",
+            "``or this```",
+            ">this is a quote\n>and this\n> and this too!",
+            ">but this\n> is not\n because reasons",
+            "- Here is a list item\n- and another",
+            "- But this one\n doesn't count",
+            "1. and this is complicated\n2. but not extremely",
+            "1. it's hard to differenciate\nbut not really",
+        ]
+        expected_results = [
+            BlockType.paragraph,
+            BlockType.heading,
+            BlockType.heading,
+            BlockType.heading,
+            BlockType.paragraph,
+            BlockType.paragraph,
+            BlockType.code,
+            BlockType.paragraph,
+            BlockType.paragraph,
+            BlockType.quote,
+            BlockType.paragraph,
+            BlockType.unordered_list,
+            BlockType.paragraph,
+            BlockType.ordered_list,
+            BlockType.paragraph
+        ]
+        results = []
+        for test in tests:
+            results.append(block_to_block_type(test))
+        #print(results)
+        self.assertEqual(results, expected_results)
 
 if __name__ == "__main__":
     unittest.main()
