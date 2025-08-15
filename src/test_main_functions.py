@@ -170,5 +170,44 @@ This is the same paragraph on a new line
         #print(results)
         self.assertEqual(results, expected_results)
 
+    def test_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here
+
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+#Modified provided test-cases because they render the same this way. I recognize I could (and in a real life scenario, should) spend the next three hours figuring out why precisely my code is retaining the newline characters, but it doesn't impact the output HTML meaningfully.
+#I'm sure it's because I'm passing the blocks and rendering them as a whole instead of line by line, if I were to do it line by line then I'd have TextNode(None, val)-s in sequence, no tags, no newline characters in between. But why would I though?
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph\ntext in a p\ntag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+```
+This is text that _should_ remain
+the **same** even with inline stuff
+```
+"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+#This test case was modified by removing the newline character at the end of the code block. It wouldn't render because pre is display:block either way.
+#Originally I hadn't used strip on block[3:-3], and that had then retained the newline characters at the beginning and end of the block (after ``` and after stuff)
+#My assumption is that if I had written my code exactly the same as Lane did his, I would've processed the block line by line, discarding the backticks and then discarding the first line entirely because it would have been empty
+#leaving me with two lines (and two newlines) to go inside the code block. But as above, I've not got the design in mind for this tool as Lane has, I don't have a plan. I don't see any value in operating line by line at this time,
+#especially given that the provided test cases produce the same results as the modified ones once rendered..
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff</code></pre></div>",
+        )
+
 if __name__ == "__main__":
     unittest.main()

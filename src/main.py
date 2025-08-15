@@ -1,7 +1,8 @@
 from textnode import *
 from leafnode import LeafNode
-from re import findall
+from re import findall, MULTILINE
 from enum import Enum
+from parentnode import ParentNode
 
 def main():
     #tn = TextNode("This is some anchor text", TextType.LINK)
@@ -122,13 +123,14 @@ def text_to_textnodes(text):
     nodes = split_nodes_image(nodes)
     return nodes
 
+#I did a dumb. No deleting list members while looping over that same list.
 def markdown_to_blocks(markdown):
     spl = markdown.split("\n\n")
+    blocks = []
     for i in range(len(spl)):
-        if not spl[i]:
-            del spl[i]
-        spl[i] = spl[i].strip()
-    return spl
+        if spl[i]:
+            blocks.append(spl[i].strip())
+    return blocks
 
 class BlockType(Enum):
     paragraph = 0
@@ -165,5 +167,44 @@ def block_to_block_type(block):
     if ol_test:
         return BlockType.ordered_list
     return BlockType.paragraph
+
+def text_block_to_children(block):
+    text_nodes = text_to_textnodes(block)
+    html_nodes = []
+    for text_node in text_nodes:
+        html_nodes.append(text_node_to_html_node(text_node))
+    return html_nodes
+
+def list_block_to_li_children(block):
+    html_nodes = []
+    matches = findall(r"^(?:\d+\. |- )(.*)$", block, MULTILINE)
+    for match in matches:
+        html_nodes.append(ParentNode("li", text_block_to_children(match)))
+    return html_nodes
+
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    block_nodes = []
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        match block_type:
+            case BlockType.quote:
+                block_nodes.append(ParentNode("blockquote", text_block_to_children(block)))
+            case BlockType.unordered_list:
+                block_nodes.append(ParentNode("ul", list_block_to_li_children(block)))
+            case BlockType.ordered_list:
+                block_nodes.append(ParentNode("ol", list_block_to_li_children(block)))
+            case BlockType.code:
+                block_nodes.append(ParentNode("pre", [text_node_to_html_node(TextNode(block[3:-3].strip(), TextType.CODE))]))
+                #block_nodes.append(ParentNode("code", [ParentNode("pre", [LeafNode(None, block[3:-3])])]))
+                continue
+            case BlockType.heading:
+                match = findall(r"^(#{1,6}) (.*)", block)
+                block_nodes.append(LeafNode(f"h{len(match[0][0])}", match[0][1]))
+                continue
+            case _:
+                block_nodes.append(ParentNode("p", text_block_to_children(block)))
+    root_node = ParentNode("div", block_nodes)
+    return root_node
 
 main()
