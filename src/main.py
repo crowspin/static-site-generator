@@ -3,11 +3,11 @@ from leafnode import LeafNode
 from re import findall, MULTILINE
 from enum import Enum
 from parentnode import ParentNode
+from shutil import rmtree, copy
+import os
 
 def main():
-    #tn = TextNode("This is some anchor text", TextType.LINK)
-    #print(tn)
-    pass
+    copy_static_dir_to_public()
 
 def text_node_to_html_node(text_node):
     match (text_node.text_type):
@@ -207,4 +207,31 @@ def markdown_to_html_node(markdown):
     root_node = ParentNode("div", block_nodes)
     return root_node
 
-main()
+def copy_static_dir_to_public(subdir = ""):
+    stat_abs = os.path.join(os.path.abspath("static"), subdir)
+    pub_abs = os.path.join(os.path.abspath("public"), subdir)
+
+    if not subdir:
+        if os.path.exists(pub_abs):
+            print("Deleting public folder and all contents...")
+            rmtree(pub_abs)
+        print("Making public folder...")
+        os.mkdir(pub_abs)
+
+    print("In " + stat_abs)
+    dir_contents = os.listdir(stat_abs)
+    for obj in dir_contents:
+        obj_abs_path = os.path.join(stat_abs, obj)
+        dst_abs_path = os.path.join(pub_abs, obj)
+        if os.path.isfile(obj_abs_path):
+            copy(obj_abs_path, dst_abs_path)
+            print(f"Copied '{obj_abs_path}' to '{dst_abs_path}'")
+        else:
+            os.mkdir(dst_abs_path)
+            if subdir:
+                copy_static_dir_to_public(f"{subdir}/{obj}")
+            else:
+                copy_static_dir_to_public(obj)
+
+if __name__ == "__main__":
+    main()
