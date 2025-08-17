@@ -4,15 +4,21 @@ from re import findall, MULTILINE, sub
 from enum import Enum
 from parentnode import ParentNode
 from shutil import rmtree, copy
-import os
+import os, sys
 
 def main():
+    if sys.argv[1]:
+        basepath = sys.argv[1]
+    else:
+        basepath = "/"
+
     copy_static_dir_to_public()
 
     src = os.path.abspath("content/")
     tmp = os.path.abspath("template.html")
-    dst = os.path.abspath("public/")
-    generate_pages_recursive(src, tmp, dst)
+    dst = os.path.abspath("docs/")
+    #dst = os.path.abspath("public/")
+    generate_pages_recursive(src, tmp, dst, basepath)
 
 def text_node_to_html_node(text_node):
     match (text_node.text_type):
@@ -214,14 +220,15 @@ def markdown_to_html_node(markdown):
 
 def copy_static_dir_to_public(subdir = ""):
     stat_abs = os.path.join(os.path.abspath("static"), subdir)
-    pub_abs = os.path.join(os.path.abspath("public"), subdir)
+    #pub_abs = os.path.join(os.path.abspath("public"), subdir)
+    pub_abs = os.path.join(os.path.abspath("docs"), subdir)
 
     if not subdir:
         if os.path.exists(pub_abs):
             print("Deleting public folder and all contents...")
             rmtree(pub_abs)
         print("Making public folder...")
-        os.mkdir(pub_abs)
+        os.mkdir(pub_abs, 0o755)
 
     print("In " + stat_abs)
     dir_contents = os.listdir(stat_abs)
@@ -232,7 +239,7 @@ def copy_static_dir_to_public(subdir = ""):
             copy(obj_abs_path, dst_abs_path)
             print(f"Copied '{obj_abs_path}' to '{dst_abs_path}'")
         else:
-            os.mkdir(dst_abs_path)
+            os.mkdir(dst_abs_path, 0o755)
             if subdir:
                 copy_static_dir_to_public(f"{subdir}/{obj}")
             else:
@@ -245,7 +252,7 @@ def extract_title(markdown):
         if match:
             return match[0].strip()
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
 
     try:
@@ -273,6 +280,8 @@ def generate_page(from_path, template_path, dest_path):
     page_title = extract_title(markdown)
 
     output_string = template.replace("{{ Title }}", page_title).replace("{{ Content }}", html_string)
+    output_string = sub(r"href=\"/", f"href=\"{basepath}", output_string)
+    output_string = sub(r"src=\"/", f"src=\"{basepath}", output_string)
 
     try:
         os.makedirs(os.path.dirname(dest_path), 666, True)
@@ -281,17 +290,17 @@ def generate_page(from_path, template_path, dest_path):
     except Exception:
         print(f"An exception occurred while writing to {dest_path}")
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     dir_contents = os.listdir(dir_path_content)
     for obj in dir_contents:
         obj_abs_path = os.path.join(dir_path_content, obj)
         dst_abs_path = os.path.join(dest_dir_path, obj)
         if os.path.isfile(obj_abs_path):
             if obj[-3:] == ".md":
-                generate_page(obj_abs_path, template_path, (dst_abs_path[:-3] + ".html"))
+                generate_page(obj_abs_path, template_path, (dst_abs_path[:-3] + ".html"), basepath)
         else:
-            os.mkdir(dst_abs_path)
-            generate_pages_recursive(obj_abs_path, template_path, dst_abs_path)
+            os.mkdir(dst_abs_path, 0o755)
+            generate_pages_recursive(obj_abs_path, template_path, dst_abs_path, basepath)
 
 if __name__ == "__main__":
     main()
