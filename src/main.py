@@ -9,10 +9,10 @@ import os
 def main():
     copy_static_dir_to_public()
 
-    src = os.path.abspath("content/index.md")
+    src = os.path.abspath("content/")
     tmp = os.path.abspath("template.html")
-    dst = os.path.abspath("public/index.html")
-    generate_page(src, tmp, dst)
+    dst = os.path.abspath("public/")
+    generate_pages_recursive(src, tmp, dst)
 
 def text_node_to_html_node(text_node):
     match (text_node.text_type):
@@ -205,7 +205,7 @@ def markdown_to_html_node(markdown):
                 continue
             case BlockType.heading:
                 match = findall(r"^(#{1,6}) (.*)", block)
-                block_nodes.append(LeafNode(f"h{len(match[0][0])}", match[0][1]))
+                block_nodes.append(ParentNode(f"h{len(match[0][0])}", text_block_to_children(match[0][1])))
                 continue
             case _:
                 block_nodes.append(ParentNode("p", text_block_to_children(block)))
@@ -247,8 +247,6 @@ def extract_title(markdown):
 
 def generate_page(from_path, template_path, dest_path):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
-    
-    #Assuming all parameters are absolute paths
 
     try:
         with open(from_path, 'r') as f:
@@ -282,6 +280,18 @@ def generate_page(from_path, template_path, dest_path):
             f.write(output_string)
     except Exception:
         print(f"An exception occurred while writing to {dest_path}")
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    dir_contents = os.listdir(dir_path_content)
+    for obj in dir_contents:
+        obj_abs_path = os.path.join(dir_path_content, obj)
+        dst_abs_path = os.path.join(dest_dir_path, obj)
+        if os.path.isfile(obj_abs_path):
+            if obj[-3:] == ".md":
+                generate_page(obj_abs_path, template_path, (dst_abs_path[:-3] + ".html"))
+        else:
+            os.mkdir(dst_abs_path)
+            generate_pages_recursive(obj_abs_path, template_path, dst_abs_path)
 
 if __name__ == "__main__":
     main()
