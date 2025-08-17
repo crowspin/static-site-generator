@@ -1,6 +1,6 @@
 from textnode import *
 from leafnode import LeafNode
-from re import findall, MULTILINE
+from re import findall, MULTILINE, sub
 from enum import Enum
 from parentnode import ParentNode
 from shutil import rmtree, copy
@@ -8,6 +8,11 @@ import os
 
 def main():
     copy_static_dir_to_public()
+
+    src = os.path.abspath("content/index.md")
+    tmp = os.path.abspath("template.html")
+    dst = os.path.abspath("public/index.html")
+    generate_page(src, tmp, dst)
 
 def text_node_to_html_node(text_node):
     match (text_node.text_type):
@@ -22,7 +27,7 @@ def text_node_to_html_node(text_node):
         case TextType.LINK:
             return LeafNode("a", text_node.text, {"href": text_node.url})
         case TextType.IMAGE:
-            return LeafNode("img", props={"src":text_node.url, "alt":text_node.text})
+            return LeafNode("img", "", props={"src":text_node.url, "alt":text_node.text})
         case _:
             raise Exception("Invalid TextType for conversion to HTML LeafNode.")
         
@@ -189,7 +194,7 @@ def markdown_to_html_node(markdown):
         block_type = block_to_block_type(block)
         match block_type:
             case BlockType.quote:
-                block_nodes.append(ParentNode("blockquote", text_block_to_children(block)))
+                block_nodes.append(ParentNode("blockquote", text_block_to_children(sub(r"^>\s*", "", block, flags=MULTILINE).replace("\n", "<br />"))))
             case BlockType.unordered_list:
                 block_nodes.append(ParentNode("ul", list_block_to_li_children(block)))
             case BlockType.ordered_list:
@@ -233,5 +238,53 @@ def copy_static_dir_to_public(subdir = ""):
             else:
                 copy_static_dir_to_public(obj)
 
+def extract_title(markdown):
+    split = markdown.split('\n')
+    for line in split:
+        match = findall(r"^# (.*)", line)
+        if match:
+            return match[0].strip()
+
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    
+    #Assuming all parameters are absolute paths
+
+    try:
+        with open(from_path, 'r') as f:
+            markdown = f.read()
+    except FileNotFoundError:
+        print(f"File at '{from_path}' not found")
+    except PermissionError:
+        print(f"File at '{from_path}' could not be opened")
+    except Exception:
+        print(f"An unexplained error occurred while opening '{from_path}'")
+
+    try:
+        with open(template_path, 'r') as f:
+            template = f.read()
+    except FileNotFoundError:
+        print(f"File at '{template_path}' not found")
+    except PermissionError:
+        print(f"File at '{template_path}' could not be opened")
+    except Exception:
+        print(f"An unexplained error occurred while opening '{template_path}'")
+    
+    html_nodes = markdown_to_html_node(markdown)
+    html_string = html_nodes.to_html()
+    page_title = extract_title(markdown)
+
+    output_string = template.replace("{{ Title }}", page_title).replace("{{ Content }}", html_string)
+
+    try:
+        os.makedirs(os.path.dirname(dest_path), 666, True)
+        with open(dest_path, 'w') as f:
+            f.write(output_string)
+    except Exception:
+        print(f"An exception occurred while writing to {dest_path}")
+
 if __name__ == "__main__":
     main()
+
+
+#Before submitting project: destroy this monolith

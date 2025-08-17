@@ -209,5 +209,11 @@ the **same** even with inline stuff
             "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff</code></pre></div>",
         )
 
+    def test_extract_title(self):
+        md = "#  Hello "
+        retval = extract_title(md)
+        expval = "Hello"
+        self.assertEqual(retval, expval)
+
 if __name__ == "__main__":
     unittest.main()

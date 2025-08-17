@@ -9,7 +9,14 @@ class ParentNode(HTMLNode):
             raise ValueError("ParentNode has no tag")
         if not self.children:
             raise ValueError("ParentNode has no children")
-        built_string = ""
+        
+        prop_string = ""
+        if type(self.props) is dict:
+            for p,v in self.props.items():
+                prop_string += f" {p}=\"{v}\""
+
+        child_string = ""
         for child in self.children:
-            built_string += child.to_html()
-        return f"<{self.tag}>{built_string}</{self.tag}>"
+            child_string += child.to_html()
+
+        return f"<{self.tag}{prop_string}>{child_string}</{self.tag}>"
